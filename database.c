@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "database.h"
 
 
@@ -23,7 +25,7 @@ Table* create_table(void) {
 }
 
 // Create row struct
-Row* create_row(char* name, int age, char* career) {
+Row* create_row(char* name, char* age, char* career) {
     
     // Allocate memory and check malloc datatype
     Row* r = malloc(sizeof(Row));
@@ -34,13 +36,14 @@ Row* create_row(char* name, int age, char* career) {
     // set data and pointers to next and prev rows
     strcpy(r->name, name);
     strcpy(r->career, career);
-    r->age = age;
+    strcpy(r->age, age);
     r->prev_row = NULL;
     r->next_row = NULL;
 
     return r;
 }
 
+// Insert Row into table
 int insert_row(Table* t, Row* r) {
     // if Table Empty
     if (t->head == NULL) {
@@ -55,8 +58,9 @@ int insert_row(Table* t, Row* r) {
     return 1;
 }
 
+// Displays a row
 void display_row(Row* r) {
-    printf("| Name: %s | Age: %d | Career: %s |\n", r->name, r->age, r->career);
+    printf("%s, %s, %s", r->name, r->age, r->career);
 }
 
 // Displays table through stdout. Shows first n rows
@@ -71,4 +75,34 @@ void display_table(Table* t, int n) {
         r = r->next_row;
         i++;
     }
+}
+
+
+int read_csv(char* path, Table* t) {
+    FILE* file = fopen(path, "r");
+    if (file == NULL)
+        return 1;
+    
+    // Read CSV Line by Line
+    char* line;
+    char buffer[256];
+    int i = 0;
+    while((line = fgets(buffer, sizeof(buffer), file)) != NULL && i < MAX_ITER) {
+        
+        // Seperate the line into substrings with a seperator of ","
+        char cols[MAX_COLS][MAX_COL_CHARS]; // Maximum 20 cols, 64 characters per column
+        char* token;
+        int j = 0;
+        while ((token = strsep(&line,",")) != NULL && j <= MAX_COLS) { 
+            //printf("%s\n", token);
+            strcpy(cols[j],token);
+            j++;
+        }
+        //printf("%s %s %s",cols[0],cols[1], cols[2]);
+        insert_row(t, create_row(cols[0], cols[1], cols[2]));
+        
+        i++; // MAX ITERS
+    }
+    fclose(file);
+    return 0;
 }
