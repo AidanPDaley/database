@@ -8,9 +8,7 @@
 // prototype table with set column types
 // Double Linked List
 typedef struct Row {
-    char name[64];
-    char  age[4];
-    char career[64];
+    char* cols[MAX_COLS];
     struct Row* prev_row;
     struct Row* next_row;
 } Row;
@@ -21,13 +19,14 @@ typedef struct {
 } Table;
 
 Table* create_table(void);
-Row* create_row(char* name, char* age, char* career);
+Row* create_row(char* cols[MAX_COLS]);
 int insert_row(Table* t, Row* r);
 void display_row(Row* r);
 void display_table(Table* t, int n);
 
 int read_csv(char* path, Table* t);
-
+void display_head(Table* t);
+void display_tail(Table* t);
 
 
 #endif

@@ -25,21 +25,29 @@ Table* create_table(void) {
 }
 
 // Create row struct
-Row* create_row(char* name, char* age, char* career) {
-    
-    // Allocate memory and check malloc datatype
-    Row* r = malloc(sizeof(Row));
+Row* create_row(char* cols[MAX_COLS]) {
+    //printf("Creating row\n");    
+    // Allocate memory for row
+    Row* r = (Row*) malloc(sizeof(Row));
     if (r == NULL) {
         assert(0);
     }
 
+    // Allocate Memory for cols because they may be temp pointers
+    int i = 0;
+    while (cols[i] != NULL && i <= MAX_COLS) {
+        r->cols[i] = (char*) malloc(strlen(cols[i]) + 1);
+        if (r->cols[i] == NULL) assert(0);
+         
+        strcpy(r->cols[i], cols[i]);
+        i++;
+    }
+
+    
     // set data and pointers to next and prev rows
-    strcpy(r->name, name);
-    strcpy(r->career, career);
-    strcpy(r->age, age);
     r->prev_row = NULL;
     r->next_row = NULL;
-
+    //printf("created row\n");
     return r;
 }
 
@@ -47,36 +55,55 @@ Row* create_row(char* name, char* age, char* career) {
 int insert_row(Table* t, Row* r) {
     // if Table Empty
     if (t->head == NULL) {
+        //printf("INSERTING FIRST ROW\n");
         t->head = r;
         t->tail = r;
         return 1;
     }
-    // if table not empty, connect row to last row
-    t->tail->next_row = r;
+    //printf("INSERTING SECOND\n");
     r->prev_row = t->tail;
-    t->tail= r;
+    t->tail->next_row = r;
+    t->tail = r;
     return 1;
 }
 
-// Displays a row
-void display_row(Row* r) {
-    printf("%s, %s, %s", r->name, r->age, r->career);
+void display_head(Table* t) {
+    printf("HEAD: ");
+    display_row(t->head);
 }
 
-// Displays table through stdout. Shows first n rows
+void display_tail(Table* t) {
+    printf("TAIL: ");
+    display_row(t->tail);
+}
+
+// Displays row
+void display_row(Row* r) {
+    char col_str[MAX_COLS * MAX_COL_CHARS] = "";
+    
+    int i = 0;
+    while (r->cols[i] != NULL && i <= MAX_COLS) {
+        // strncat used to prevent buffer overflows
+        strncat(col_str, r->cols[i], strlen(r->cols[i]));
+        strncat(col_str, " ", 1);
+        i++;
+    }
+    printf("%s\n", col_str);
+}
+
+// Displays table. Shows first n rows
 void display_table(Table* t, int n) {
     // Iterate through database rows and display them
     if (n == 0) n = MAX_ITER;
     
     Row* r = t->head;
     int i = 0;
-    while (r != NULL && i < n && i <= MAX_ITER) {
+    while (r != NULL && i <= n && i <= MAX_ITER) {
         display_row(r);
         r = r->next_row;
         i++;
     }
 }
-
 
 int read_csv(char* path, Table* t) {
     FILE* file = fopen(path, "r");
@@ -88,20 +115,21 @@ int read_csv(char* path, Table* t) {
     char buffer[256];
     int i = 0;
     while((line = fgets(buffer, sizeof(buffer), file)) != NULL && i < MAX_ITER) {
-        
-        // Seperate the line into substrings with a seperator of ","
-        char cols[MAX_COLS][MAX_COL_CHARS]; // Maximum 20 cols, 64 characters per column
-        char* token;
+        // Remove \n at the end of line
+        line[strcspn(line, "\n")] = '\0'; 
+
+        // Seperate the line into substrings based on the seperator ","
+        char* cols[MAX_COLS] = {};
         int j = 0;
-        while ((token = strsep(&line,",")) != NULL && j <= MAX_COLS) { 
-            //printf("%s\n", token);
-            strcpy(cols[j],token);
+        char *token;
+        while ((token = strsep(&line, ",")) != NULL) {
+            cols[j] = token;
             j++;
         }
-        //printf("%s %s %s",cols[0],cols[1], cols[2]);
-        insert_row(t, create_row(cols[0], cols[1], cols[2]));
-        
-        i++; // MAX ITERS
+
+        // Create New Row and add to table
+        Row* r = create_row(cols);
+        insert_row(t, r);
     }
     fclose(file);
     return 0;
