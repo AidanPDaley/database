@@ -15,7 +15,6 @@ Table* create_table(void) {
 
     // Check malloc return type
     if (t == NULL) {
-        // Handle Error Later
         assert(0);
     }
     t->head = NULL;
@@ -25,15 +24,11 @@ Table* create_table(void) {
 }
 
 // Create row struct
-Row* create_row(char* cols[MAX_COLS]) {
-    //printf("Creating row\n");    
+Row* create_row(char* cols[MAX_COLS]) { 
     // Allocate memory for row
     Row* r = (Row*) malloc(sizeof(Row));
-    if (r == NULL) {
-        assert(0);
-    }
 
-    // Allocate Memory for cols because they may be temp pointers
+    // Allocate Memory for cols
     int i = 0;
     while (cols[i] != NULL && i <= MAX_COLS) {
         r->cols[i] = (char*) malloc(strlen(cols[i]) + 1);
@@ -47,7 +42,6 @@ Row* create_row(char* cols[MAX_COLS]) {
     // set data and pointers to next and prev rows
     r->prev_row = NULL;
     r->next_row = NULL;
-    //printf("created row\n");
     return r;
 }
 
@@ -67,15 +61,45 @@ int insert_row(Table* t, Row* r) {
     return 1;
 }
 
-void display_head(Table* t) {
-    printf("HEAD: ");
-    display_row(t->head);
+// Free the memory stored in cols (char*[]) in the row struct
+void delete_cols(char* cols[]) {
+    for (int i = 0; cols[i] != NULL && i < MAX_COLS ; i++) {
+        if (cols[i] != NULL) {
+            free(cols[i]);
+            cols[i] = NULL;
+        }
+    }
 }
 
-void display_tail(Table* t) {
-    printf("TAIL: ");
-    display_row(t->tail);
+// free the row
+void delete_row(Row* r) {
+    delete_cols(r->cols);
+    free(r);
 }
+
+// Free table. Includes freeing the rows and the data cols in the rows
+void delete_table(Table* t) {
+    printf("Deleting Table...\n");
+    // Null table or empty table
+    if (t == NULL)
+        assert(0);
+    else if (t->head == NULL) {
+        free(t);
+        return;
+    }
+    // Table with rows
+    Row* temp = t->head;
+    int i = 0;
+    while (temp != NULL && i <= MAX_ITER) {
+        Row* next = temp->next_row;
+        delete_row(temp);
+        temp = next;
+        i++;
+    }
+    free(t);
+    printf("Table Deleted\n");
+}
+
 
 // Displays row
 void display_row(Row* r) {
@@ -83,7 +107,6 @@ void display_row(Row* r) {
     
     int i = 0;
     while (r->cols[i] != NULL && i <= MAX_COLS) {
-        // strncat used to prevent buffer overflows
         strncat(col_str, r->cols[i], strlen(r->cols[i]));
         strncat(col_str, " ", 1);
         i++;
@@ -91,8 +114,24 @@ void display_row(Row* r) {
     printf("%s\n", col_str);
 }
 
-// Displays table. Shows first n rows
+// Display the head / first row in table
+void display_head(Table* t) {
+    printf("HEAD: ");
+    display_row(t->head);
+}
+
+// Display the tail / last row in the table
+void display_tail(Table* t) {
+    printf("TAIL: ");
+    display_row(t->tail);
+}
+
+// Displays table. Shows first n rows. If n == 0, show all rows
 void display_table(Table* t, int n) {
+    if (t == NULL) {
+        printf("Table does not exist\n");
+        return;
+    }
     // Iterate through database rows and display them
     if (n == 0) n = MAX_ITER;
     
@@ -105,6 +144,7 @@ void display_table(Table* t, int n) {
     }
 }
 
+// Read the source csv file that is pased with the executable through stdin
 int read_csv(char* path, Table* t) {
     FILE* file = fopen(path, "r");
     if (file == NULL)

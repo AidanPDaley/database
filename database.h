@@ -18,15 +18,25 @@ typedef struct {
     Row* tail;
 } Table;
 
+// Create
 Table* create_table(void);
 Row* create_row(char* cols[MAX_COLS]);
+
+// Insert
 int insert_row(Table* t, Row* r);
+
+// Display
 void display_row(Row* r);
 void display_table(Table* t, int n);
-
-int read_csv(char* path, Table* t);
 void display_head(Table* t);
 void display_tail(Table* t);
 
+// Read CSV
+int read_csv(char* path, Table* t);
+
+// Delete
+void delete_cols(char* cols[]);
+void delete_row(Row* r);
+void delete_table(Table* t);
 
 #endif
